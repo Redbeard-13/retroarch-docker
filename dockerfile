@@ -49,7 +49,7 @@ COPY nginx.conf /etc/nginx/
 COPY webaudio.js /usr/share/novnc/core/
 COPY retroarch.cfg /home/appuser/.config/retroarch/retroarch.cfg
 
-# Подставим supervisord.conf с логами в домашнюю директорию
+# Copy supervisor config with logs in home dir
 COPY supervisord_home.conf /etc/supervisor/supervisord.conf
 
 # Установим корректные права
@@ -61,7 +61,7 @@ RUN sed -i "/import RFB/a \\\n      import WebAudio from '/core/webaudio.js'" \
     sed -i "/UI.rfb.resizeSession/a \\\n        var loc = window.location, new_uri; \\\n        if (loc.protocol === 'https:') { \\\n            new_uri = 'wss:'; \\\n        } else { \\\n            new_uri = 'ws:'; \\\n        } \\\n        new_uri += '//' + loc.host; \\\n        new_uri += '/audio'; \\\n      var wa = new WebAudio(new_uri); \\\n      document.addEventListener('keydown', e => { wa.start(); });" \
     /usr/share/novnc/app/ui.js
 
-# Переключаемся на пользователя
+# Switch to appuser
 USER appuser
 
 # Setup VNC password and cert
