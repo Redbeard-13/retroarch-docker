@@ -9,12 +9,13 @@ ENV XKB_DEFAULT_RULES=base
 # Create non-root user
 RUN useradd -m -s /bin/bash appuser
 
-# Create required directories and assign ownership
-RUN mkdir -p /opt/app-root/src/logs \
+# Create required directories
+RUN mkdir -p \
     /home/appuser/.vnc \
     /home/appuser/.dosbox \
     /home/appuser/.config/retroarch \
-    /home/appuser/roms
+    /home/appuser/roms \
+    /home/appuser/logs
 
 # Install dependencies
 RUN apt-get update && \
@@ -46,11 +47,13 @@ RUN wget https://gigenet.dl.sourceforge.net/project/virtualgl/3.1/virtualgl_3.1_
 COPY default.pa client.conf /etc/pulse/
 COPY nginx.conf /etc/nginx/
 COPY webaudio.js /usr/share/novnc/core/
-COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY retroarch.cfg /home/appuser/.config/retroarch/retroarch.cfg
 
-# Fix permissions after copy
-RUN chown -R appuser:appuser /opt/app-root/src /home/appuser /etc/supervisor /etc/nginx /usr/share/novnc
+# Подставим supervisord.conf с логами в домашнюю директорию
+COPY supervisord_home.conf /etc/supervisor/supervisord.conf
+
+# Установим корректные права
+RUN chown -R appuser:appuser /home/appuser /etc/supervisor /etc/nginx /usr/share/novnc
 
 # Inject JS for WebAudio into noVNC client
 RUN sed -i "/import RFB/a \\\n      import WebAudio from '/core/webaudio.js'" \
@@ -58,7 +61,7 @@ RUN sed -i "/import RFB/a \\\n      import WebAudio from '/core/webaudio.js'" \
     sed -i "/UI.rfb.resizeSession/a \\\n        var loc = window.location, new_uri; \\\n        if (loc.protocol === 'https:') { \\\n            new_uri = 'wss:'; \\\n        } else { \\\n            new_uri = 'ws:'; \\\n        } \\\n        new_uri += '//' + loc.host; \\\n        new_uri += '/audio'; \\\n      var wa = new WebAudio(new_uri); \\\n      document.addEventListener('keydown', e => { wa.start(); });" \
     /usr/share/novnc/app/ui.js
 
-# Switch to appuser
+# Переключаемся на пользователя
 USER appuser
 
 # Setup VNC password and cert
